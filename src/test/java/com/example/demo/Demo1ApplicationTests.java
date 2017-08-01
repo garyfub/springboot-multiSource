@@ -23,7 +23,7 @@ public class Demo1ApplicationTests {
 	@Test
 	public void testAdd() {
 		//应用插入的数据被回滚
-		personDataRepository.addCarAndHouse(false);
+		personDataRepository.addCarAndHouse(true);
 
 	}
 
