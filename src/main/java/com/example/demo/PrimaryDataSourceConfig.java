@@ -26,83 +26,73 @@ import org.springframework.transaction.jta.JtaTransactionManager;
 import javax.sql.DataSource;
 import javax.sql.XADataSource;
 import javax.transaction.SystemException;
+import java.util.Properties;
 
 /**
  * Created by sam on 2017/7/30.
  */
 
 @Configuration
-@EnableTransactionManagement
 @MapperScan(value = "com.example.demo.mapper.primary",sqlSessionFactoryRef = "primarySqlSessionFactory")
-public class PrimaryDataSourceConfig implements TransactionManagementConfigurer {
+public class PrimaryDataSourceConfig {
 
     @Bean(name = "primaryDataSource")
     @Primary
-    @ConfigurationProperties(prefix = "primary.datasource")
     public DataSource primaryDataSource(){
         System.out.println("-------primary dataSource-------init");
-
-        EmbeddedDatabaseBuilder builder = new EmbeddedDatabaseBuilder();
-        EmbeddedDatabase db = builder
-                .setType(EmbeddedDatabaseType.H2) //等价于设置url=jdbc:h2:mem:testdb
-                .addScript("primarySchema.sql")
-                .build();
-//        return db;
-
         AtomikosDataSourceBean dataSourceBean = new AtomikosDataSourceBean();
-        dataSourceBean.setXaProperties();
+        dataSourceBean.setXaDataSourceClassName("org.h2.jdbcx.JdbcDataSource");
+        Properties pts = new Properties();
+        pts.setProperty("url","jdbc:h2:mem:PMDB;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE");
+        pts.setProperty("user","sa");
+        pts.setProperty("password","");
+        dataSourceBean.setXaProperties(pts);
+        dataSourceBean.setPoolSize(1);
+        dataSourceBean.setMaxPoolSize(3);
+        return dataSourceBean;
+    }
+
+
+//第一种方式
+//    @Bean(name = "primaryDataSource")
+//    @Primary
+//    @ConfigurationProperties(prefix = "primary.datasource")
+//    public DataSource primaryDataSource(){
+//        System.out.println("-------primary dataSource-------init");
 //        return DataSourceBuilder.create().build();
-    }
+//    }
+
+    //第二种方式
+//    @Bean(name = "primaryDataSource")
+//    @Primary
+//    public DataSource primaryDataSource(){
+//        System.out.println("-------primary dataSource-------init");
+//        EmbeddedDatabaseBuilder builder = new EmbeddedDatabaseBuilder();
+//        EmbeddedDatabase db = builder
+//                .setType(EmbeddedDatabaseType.H2) //等价于设置url=jdbc:h2:mem:testdb
+//                .addScript("primarySchema.sql")
+//                .build();
+//        return db;
+//    }
 
 
-    @Bean(name = "atomikosTransactionManager")
-    public UserTransactionManager atomikosTransactionManager(){
-        UserTransactionManager userTransactionManager = new UserTransactionManager();
-        userTransactionManager.setForceShutdown(true);
-        return userTransactionManager;
-    }
 
-    @Bean(name = "atomikosUserTransaction")
-    public UserTransactionImp atomikosUserTransaction(){
-        UserTransactionImp atomikosUserTransation =new UserTransactionImp();
-        try {
-            atomikosUserTransation.setTransactionTimeout(100);
-        } catch (SystemException e) {
-            e.printStackTrace();
-        }
-        return atomikosUserTransation;
-    }
+
 
     @Bean
-    public JtaTransactionManager txManager() {
-       return new JtaTransactionManager(atomikosUserTransaction(),atomikosTransactionManager());
-    }
+    public DataSourceInitializer primaryInitSql(@Qualifier("primaryDataSource") DataSource dataSource){
 
-
-    @Override
-    public PlatformTransactionManager annotationDrivenTransactionManager() {
-        return txManager();
+        return init(dataSource,"primarySchema");
     }
 
 
 
-
-
-//两种方式执行schema.sql
-//    @Bean
-//    public DataSourceInitializer primaryInitSql(@Qualifier("primaryDataSource") DataSource dataSource){
-//
-//        return init(dataSource,"primarySchema");
-//    }
-
-
-
-//    private DataSourceInitializer init(DataSource dataSource,String schameName){
-//        DataSourceInitializer dsi = new DataSourceInitializer();
-//        dsi.setDataSource(dataSource);
-//        dsi.setDatabasePopulator(new ResourceDatabasePopulator(new ClassPathResource(schameName+".sql")));
-//        return dsi;
-//    }
+    private DataSourceInitializer init(DataSource dataSource,String schameName){
+        DataSourceInitializer dsi = new DataSourceInitializer();
+        dsi.setDataSource(dataSource);
+        dsi.setDatabasePopulator(new ResourceDatabasePopulator(new ClassPathResource(schameName+".sql")));
+        return dsi;
+    }
 
 
 

@@ -6,6 +6,7 @@ import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceBuilder;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.jta.atomikos.AtomikosDataSourceBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -14,6 +15,7 @@ import org.springframework.jdbc.datasource.init.DataSourceInitializer;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 
 import javax.sql.DataSource;
+import java.util.Properties;
 
 /**
  * Created by sam on 2017/7/30.
@@ -25,11 +27,19 @@ public class SecondDataSourceConfig {
 
 
     @Bean(name = "secondDataSource")
-    @ConfigurationProperties(prefix = "second.datasource")
-
     public DataSource secondDataSource(){
         System.out.println("-------second dataSource-------init");
-        return DataSourceBuilder.create().build();
+        AtomikosDataSourceBean dataSourceBean = new AtomikosDataSourceBean();
+        dataSourceBean.setXaDataSourceClassName("org.h2.jdbcx.JdbcDataSource");
+        Properties pts = new Properties();
+        pts.setProperty("url","jdbc:h2:mem:SCDB;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE");
+        pts.setProperty("user","sa");
+        pts.setProperty("password","");
+        dataSourceBean.setXaProperties(pts);
+        dataSourceBean.setPoolSize(1);
+        dataSourceBean.setMaxPoolSize(3);
+        return dataSourceBean;
+
     }
 
 
