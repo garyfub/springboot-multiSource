@@ -10,6 +10,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabase;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
 import org.springframework.jdbc.datasource.init.DataSourceInitializer;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 
@@ -28,24 +31,31 @@ public class PrimaryDataSourceConfig {
     @ConfigurationProperties(prefix = "primary.datasource")
     public DataSource primaryDataSource(){
         System.out.println("-------primary dataSource-------init");
-        return DataSourceBuilder.create().build();
+//        return DataSourceBuilder.create().build();
+
+        EmbeddedDatabaseBuilder builder = new EmbeddedDatabaseBuilder();
+        EmbeddedDatabase db = builder
+                .setType(EmbeddedDatabaseType.H2) //等价于设置url=jdbc:h2:mem:testdb
+                .addScript("primarySchema.sql")
+                .build();
+        return db;
     }
 
+//两种方式执行schema.sql
+//    @Bean
+//    public DataSourceInitializer primaryInitSql(@Qualifier("primaryDataSource") DataSource dataSource){
+//
+//        return init(dataSource,"primarySchema");
+//    }
 
-    @Bean
-    public DataSourceInitializer primaryInitSql(@Qualifier("primaryDataSource") DataSource dataSource){
-
-        return init(dataSource,"primarySchema");
-    }
 
 
-
-    private DataSourceInitializer init(DataSource dataSource,String schameName){
-        DataSourceInitializer dsi = new DataSourceInitializer();
-        dsi.setDataSource(dataSource);
-        dsi.setDatabasePopulator(new ResourceDatabasePopulator(new ClassPathResource(schameName+".sql")));
-        return dsi;
-    }
+//    private DataSourceInitializer init(DataSource dataSource,String schameName){
+//        DataSourceInitializer dsi = new DataSourceInitializer();
+//        dsi.setDataSource(dataSource);
+//        dsi.setDatabasePopulator(new ResourceDatabasePopulator(new ClassPathResource(schameName+".sql")));
+//        return dsi;
+//    }
 
     @Bean(name = "primarySqlSessionFactory")
     @Primary
